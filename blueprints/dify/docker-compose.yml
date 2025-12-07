@@ -511,17 +511,13 @@ services:
       PLUGIN_MEDIA_CACHE_PATH: ${PLUGIN_MEDIA_CACHE_PATH:-assets}
       SENTRY_ENABLED: ${PLUGIN_SENTRY_ENABLED:-false}
       SENTRY_DSN: ${PLUGIN_SENTRY_DSN:-}
-    expose:
-      - 5002
-      - 5003
+    ports:
+      - "${EXPOSE_PLUGIN_DEBUGGING_PORT:-5003}:${PLUGIN_DEBUGGING_PORT:-5003}"
     volumes:
       - plugin_daemon_storage:/app/storage
     depends_on:
       db_postgres:
         condition: service_healthy
-    networks:
-      - ssrf_proxy_network
-      - default
 
   ssrf_proxy:
     image: ubuntu/squid:latest
