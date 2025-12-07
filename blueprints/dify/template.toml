@@ -1,0 +1,211 @@
+[variables]
+main_domain = "${domain}"
+secret_key = "${password:64}"
+db_password = "${password:32}"
+redis_password = "${password:32}"
+qdrant_api_key = "${password:32}"
+minio_access_key = "${password:16}"
+minio_secret_key = "${password:32}"
+sandbox_api_key = "${password:32}"
+plugin_daemon_key = "${password:64}"
+plugin_dify_inner_api_key = "${password:64}"
+s3_bucket_name = "difyai"
+cloudflare_tunnel_token = ""
+
+[config]
+[[config.domains]]
+serviceName = "web"
+port = 3000
+host = "${main_domain}"
+
+[[config.domains]]
+serviceName = "api"
+port = 5001
+host = "${main_domain}"
+path = "/api"
+
+[config.env]
+CONSOLE_API_URL = "http://${main_domain}/api"
+CONSOLE_WEB_URL = "http://${main_domain}"
+SERVICE_API_URL = "http://${main_domain}/api"
+TRIGGER_URL = "http://${main_domain}"
+APP_API_URL = "http://${main_domain}/api"
+APP_WEB_URL = "http://${main_domain}"
+FILES_URL = "http://${main_domain}/api"
+INTERNAL_FILES_URL = "http://api:5001"
+SECRET_KEY = "${secret_key}"
+DB_PASSWORD = "${db_password}"
+POSTGRES_PASSWORD = "${db_password}"
+REDIS_PASSWORD = "${redis_password}"
+REDISCLI_AUTH = "${redis_password}"
+CELERY_BROKER_URL = "redis://:${redis_password}@redis:6379/1"
+QDRANT_API_KEY = "${qdrant_api_key}"
+MINIO_ACCESS_KEY = "${minio_access_key}"
+MINIO_SECRET_KEY = "${minio_secret_key}"
+S3_ACCESS_KEY = "${minio_access_key}"
+S3_SECRET_KEY = "${minio_secret_key}"
+OPENDAL_S3_ACCESS_KEY_ID = "${minio_access_key}"
+OPENDAL_S3_SECRET_ACCESS_KEY = "${minio_secret_key}"
+OPENDAL_S3_ENDPOINT = "http://minio:9000"
+S3_ENDPOINT = "http://minio:9000"
+OPENDAL_S3_BUCKET = "${s3_bucket_name}"
+S3_BUCKET_NAME = "${s3_bucket_name}"
+SANDBOX_API_KEY = "${sandbox_api_key}"
+CODE_EXECUTION_API_KEY = "${sandbox_api_key}"
+PLUGIN_DAEMON_KEY = "${plugin_daemon_key}"
+PLUGIN_DIFY_INNER_API_KEY = "${plugin_dify_inner_api_key}"
+INNER_API_KEY_FOR_PLUGIN = "${plugin_dify_inner_api_key}"
+CLOUDFLARE_TUNNEL_TOKEN = "${cloudflare_tunnel_token}"
+
+[[config.mounts]]
+name = "app_storage"
+mountPath = "/app/api/storage"
+
+[[config.mounts]]
+name = "postgres_data"
+mountPath = "/var/lib/postgresql/data"
+
+[[config.mounts]]
+name = "redis_data"
+mountPath = "/data"
+
+[[config.mounts]]
+name = "qdrant_data"
+mountPath = "/qdrant/storage"
+
+[[config.mounts]]
+name = "minio_data"
+mountPath = "/data"
+
+[[config.mounts]]
+name = "sandbox_dependencies"
+mountPath = "/dependencies"
+
+[[config.mounts]]
+filePath = "../files/sandbox/conf/config.yaml"
+content = """app:
+  port: 8194
+  debug: True
+  key: dify-sandbox
+max_workers: 4
+max_requests: 50
+worker_timeout: 5
+python_path: /usr/local/bin/python3
+enable_network: True # please make sure there is no network risk in your environment
+allowed_syscalls: # please leave it empty if you have no idea how seccomp works
+proxy:
+  socks5: ''
+  http: ''
+  https: ''
+"""
+
+[[config.mounts]]
+name = "plugin_daemon_storage"
+mountPath = "/app/storage"
+
+[[config.mounts]]
+filePath = "../files/ssrf_proxy/squid.conf.template"
+content = """acl localnet src 0.0.0.1-0.255.255.255	# RFC 1122 "this" network (LAN)
+acl localnet src 10.0.0.0/8		# RFC 1918 local private network (LAN)
+acl localnet src 100.64.0.0/10		# RFC 6598 shared address space (CGN)
+acl localnet src 169.254.0.0/16 	# RFC 3927 link-local (directly plugged) machines
+acl localnet src 172.16.0.0/12		# RFC 1918 local private network (LAN)
+acl localnet src 192.168.0.0/16		# RFC 1918 local private network (LAN)
+acl localnet src fc00::/7       	# RFC 4193 local private network range
+acl localnet src fe80::/10      	# RFC 4291 link-local (directly plugged) machines
+acl SSL_ports port 443
+# acl SSL_ports port 1025-65535   # Enable the configuration to resolve this issue: https://github.com/langgenius/dify/issues/12792
+acl Safe_ports port 80		# http
+acl Safe_ports port 21		# ftp
+acl Safe_ports port 443		# https
+acl Safe_ports port 70		# gopher
+acl Safe_ports port 210		# wais
+acl Safe_ports port 1025-65535	# unregistered ports
+acl Safe_ports port 280		# http-mgmt
+acl Safe_ports port 488		# gss-http
+acl Safe_ports port 591		# filemaker
+acl Safe_ports port 777		# multiling http
+acl CONNECT method CONNECT
+acl allowed_domains dstdomain .marketplace.dify.ai
+http_access allow allowed_domains
+http_access deny !Safe_ports
+http_access deny CONNECT !SSL_ports
+http_access allow localhost manager
+http_access deny manager
+http_access allow localhost
+include /etc/squid/conf.d/*.conf
+http_access deny all
+
+################################## Proxy Server ################################
+http_port ${HTTP_PORT}
+coredump_dir ${COREDUMP_DIR}
+refresh_pattern ^ftp:		1440	20%	10080
+refresh_pattern ^gopher:	1440	0%	1440
+refresh_pattern -i (/cgi-bin/|\?) 0	0%	0
+refresh_pattern \/(Packages|Sources)(|\.bz2|\.gz|\.xz)$ 0 0% 0 refresh-ims
+refresh_pattern \/Release(|\.gpg)$ 0 0% 0 refresh-ims
+refresh_pattern \/InRelease$ 0 0% 0 refresh-ims
+refresh_pattern \/(Translation-.*)(|\.bz2|\.gz|\.xz)$ 0 0% 0 refresh-ims
+refresh_pattern .		0	20%	4320
+
+
+# cache_dir ufs /var/spool/squid 100 16 256
+# upstream proxy, set to your own upstream proxy IP to avoid SSRF attacks
+# cache_peer 172.1.1.1 parent 3128 0 no-query no-digest no-netdb-exchange default
+
+################################## Reverse Proxy To Sandbox ################################
+http_port ${REVERSE_PROXY_PORT} accel vhost
+cache_peer ${SANDBOX_HOST} parent ${SANDBOX_PORT} 0 no-query originserver
+acl src_all src all
+http_access allow src_all
+
+# Unless the option's size is increased, an error will occur when uploading more than two files.
+client_request_buffer_max_size 100 MB
+"""
+
+[[config.mounts]]
+filePath = "../files/ssrf_proxy/docker-entrypoint.sh"
+content = """#!/bin/bash
+
+# Modified based on Squid OCI image entrypoint
+
+# This entrypoint aims to forward the squid logs to stdout to assist users of
+# common container related tooling (e.g., kubernetes, docker-compose, etc) to
+# access the service logs.
+
+# Moreover, it invokes the squid binary, leaving all the desired parameters to
+# be provided by the "command" passed to the spawned container. If no command
+# is provided by the user, the default behavior (as per the CMD statement in
+# the Dockerfile) will be to use Ubuntu's default configuration [1] and run
+# squid with the "-NYC" options to mimic the behavior of the Ubuntu provided
+# systemd unit.
+
+# [1] The default configuration is changed in the Dockerfile to allow local
+# network connections. See the Dockerfile for further information.
+
+echo "[ENTRYPOINT] re-create snakeoil self-signed certificate removed in the build process"
+if [ ! -f /etc/ssl/private/ssl-cert-snakeoil.key ]; then
+    /usr/sbin/make-ssl-cert generate-default-snakeoil --force-overwrite > /dev/null 2>&1
+fi
+
+tail -F /var/log/squid/access.log 2>/dev/null &
+tail -F /var/log/squid/error.log 2>/dev/null &
+tail -F /var/log/squid/store.log 2>/dev/null &
+tail -F /var/log/squid/cache.log 2>/dev/null &
+
+# Replace environment variables in the template and output to the squid.conf
+echo "[ENTRYPOINT] replacing environment variables in the template"
+awk '{
+    while(match($0, /\${[A-Za-z_][A-Za-z_0-9]*}/)) {
+        var = substr($0, RSTART+2, RLENGTH-3)
+        val = ENVIRON[var]
+        $0 = substr($0, 1, RSTART-1) val substr($0, RSTART+RLENGTH)
+    }
+    print
+}' /etc/squid/squid.conf.template > /etc/squid/squid.conf
+
+/usr/sbin/squid -Nz
+echo "[ENTRYPOINT] starting squid"
+/usr/sbin/squid -f /etc/squid/squid.conf -NYC 1
+"""
+
