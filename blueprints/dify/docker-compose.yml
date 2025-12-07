@@ -67,7 +67,7 @@ x-shared-env: &shared-api-worker-env
   NEXT_PUBLIC_ENABLE_SINGLE_DOLLAR_LATEX: ${NEXT_PUBLIC_ENABLE_SINGLE_DOLLAR_LATEX:-false}
   DB_TYPE: ${DB_TYPE:-postgresql}
   DB_USERNAME: ${DB_USERNAME:-postgres}
-  DB_PASSWORD: ${DB_PASSWORD}
+  DB_PASSWORD: ${DB_PASSWORD:-}
   DB_HOST: ${DB_HOST:-db_postgres}
   DB_PORT: ${DB_PORT:-5432}
   DB_DATABASE: ${DB_DATABASE:-dify}
@@ -88,14 +88,14 @@ x-shared-env: &shared-api-worker-env
   REDIS_HOST: ${REDIS_HOST:-redis}
   REDIS_PORT: ${REDIS_PORT:-6379}
   REDIS_USERNAME: ${REDIS_USERNAME:-}
-  REDIS_PASSWORD: ${REDIS_PASSWORD}
+  REDIS_PASSWORD: ${REDIS_PASSWORD:-}
   REDIS_USE_SSL: ${REDIS_USE_SSL:-false}
   REDIS_SSL_CERT_REQS: ${REDIS_SSL_CERT_REQS:-CERT_NONE}
   REDIS_SSL_CA_CERTS: ${REDIS_SSL_CA_CERTS:-}
   REDIS_SSL_CERTFILE: ${REDIS_SSL_CERTFILE:-}
   REDIS_SSL_KEYFILE: ${REDIS_SSL_KEYFILE:-}
   REDIS_DB: ${REDIS_DB:-0}
-  CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+  CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://:${REDIS_PASSWORD:-}@redis:6379/1}
   CELERY_BACKEND: ${CELERY_BACKEND:-redis}
   WEB_API_CORS_ALLOW_ORIGINS: ${WEB_API_CORS_ALLOW_ORIGINS:-*}
   CONSOLE_CORS_ALLOW_ORIGINS: ${CONSOLE_CORS_ALLOW_ORIGINS:-*}
@@ -118,7 +118,7 @@ x-shared-env: &shared-api-worker-env
   VECTOR_STORE: ${VECTOR_STORE:-qdrant}
   VECTOR_INDEX_NAME_PREFIX: ${VECTOR_INDEX_NAME_PREFIX:-Vector_index}
   QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
-  QDRANT_API_KEY: ${QDRANT_API_KEY}
+  QDRANT_API_KEY: ${QDRANT_API_KEY:-}
   QDRANT_CLIENT_TIMEOUT: ${QDRANT_CLIENT_TIMEOUT:-20}
   QDRANT_GRPC_ENABLED: ${QDRANT_GRPC_ENABLED:-false}
   QDRANT_GRPC_PORT: ${QDRANT_GRPC_PORT:-6334}
@@ -151,7 +151,7 @@ x-shared-env: &shared-api-worker-env
   CHANGE_EMAIL_TOKEN_EXPIRY_MINUTES: ${CHANGE_EMAIL_TOKEN_EXPIRY_MINUTES:-5}
   OWNER_TRANSFER_TOKEN_EXPIRY_MINUTES: ${OWNER_TRANSFER_TOKEN_EXPIRY_MINUTES:-5}
   CODE_EXECUTION_ENDPOINT: ${CODE_EXECUTION_ENDPOINT:-http://sandbox:8194}
-  CODE_EXECUTION_API_KEY: ${CODE_EXECUTION_API_KEY}
+  CODE_EXECUTION_API_KEY: ${CODE_EXECUTION_API_KEY:-${SANDBOX_API_KEY:-}}
   CODE_EXECUTION_SSL_VERIFY: ${CODE_EXECUTION_SSL_VERIFY:-True}
   CODE_EXECUTION_POOL_MAX_CONNECTIONS: ${CODE_EXECUTION_POOL_MAX_CONNECTIONS:-100}
   CODE_EXECUTION_POOL_MAX_KEEPALIVE_CONNECTIONS: ${CODE_EXECUTION_POOL_MAX_KEEPALIVE_CONNECTIONS:-20}
@@ -206,7 +206,7 @@ x-shared-env: &shared-api-worker-env
   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-${DB_PASSWORD}}
   POSTGRES_DB: ${POSTGRES_DB:-${DB_DATABASE}}
   PGDATA: ${PGDATA:-/var/lib/postgresql/data/pgdata}
-  SANDBOX_API_KEY: ${SANDBOX_API_KEY}
+  SANDBOX_API_KEY: ${SANDBOX_API_KEY:-}
   SANDBOX_GIN_MODE: ${SANDBOX_GIN_MODE:-release}
   SANDBOX_WORKER_TIMEOUT: ${SANDBOX_WORKER_TIMEOUT:-15}
   SANDBOX_ENABLE_NETWORK: ${SANDBOX_ENABLE_NETWORK:-true}
@@ -214,9 +214,9 @@ x-shared-env: &shared-api-worker-env
   SANDBOX_HTTPS_PROXY: ${SANDBOX_HTTPS_PROXY:-http://ssrf_proxy:3128}
   SANDBOX_PORT: ${SANDBOX_PORT:-8194}
   PLUGIN_DAEMON_PORT: ${PLUGIN_DAEMON_PORT:-5002}
-  PLUGIN_DAEMON_KEY: ${PLUGIN_DAEMON_KEY}
+  PLUGIN_DAEMON_KEY: ${PLUGIN_DAEMON_KEY:-}
   PLUGIN_DAEMON_URL: ${PLUGIN_DAEMON_URL:-http://plugin_daemon:5002}
-  PLUGIN_DIFY_INNER_API_KEY: ${PLUGIN_DIFY_INNER_API_KEY}
+  PLUGIN_DIFY_INNER_API_KEY: ${PLUGIN_DIFY_INNER_API_KEY:-}
   PLUGIN_MAX_PACKAGE_SIZE: ${PLUGIN_MAX_PACKAGE_SIZE:-52428800}
   PLUGIN_PPROF_ENABLED: ${PLUGIN_PPROF_ENABLED:-false}
   PLUGIN_DEBUGGING_HOST: ${PLUGIN_DEBUGGING_HOST:-0.0.0.0}
@@ -265,7 +265,7 @@ services:
       SENTRY_PROFILES_SAMPLE_RATE: ${API_SENTRY_PROFILES_SAMPLE_RATE:-1.0}
       PLUGIN_REMOTE_INSTALL_HOST: ${EXPOSE_PLUGIN_DEBUGGING_HOST:-localhost}
       PLUGIN_REMOTE_INSTALL_PORT: ${EXPOSE_PLUGIN_DEBUGGING_PORT:-5003}
-      INNER_API_KEY_FOR_PLUGIN: ${PLUGIN_DIFY_INNER_API_KEY}
+      INNER_API_KEY_FOR_PLUGIN: ${PLUGIN_DIFY_INNER_API_KEY:-}
     depends_on:
       db_postgres:
         condition: service_healthy
@@ -292,7 +292,7 @@ services:
       SENTRY_DSN: ${API_SENTRY_DSN:-}
       SENTRY_TRACES_SAMPLE_RATE: ${API_SENTRY_TRACES_SAMPLE_RATE:-1.0}
       SENTRY_PROFILES_SAMPLE_RATE: ${API_SENTRY_PROFILES_SAMPLE_RATE:-1.0}
-      INNER_API_KEY_FOR_PLUGIN: ${PLUGIN_DIFY_INNER_API_KEY}
+      INNER_API_KEY_FOR_PLUGIN: ${PLUGIN_DIFY_INNER_API_KEY:-}
     depends_on:
       db_postgres:
         condition: service_healthy
@@ -358,9 +358,9 @@ services:
     image: postgres:15-alpine
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-dify}
+      POSTGRES_USER: ${POSTGRES_USER:-${DB_USERNAME:-postgres}}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-${DB_PASSWORD:-}}
+      POSTGRES_DB: ${POSTGRES_DB:-${DB_DATABASE:-dify}}
       PGDATA: ${PGDATA:-/var/lib/postgresql/data/pgdata}
     command: >
       postgres -c 'max_connections=${POSTGRES_MAX_CONNECTIONS:-100}'
@@ -392,15 +392,15 @@ services:
     image: redis:6-alpine
     restart: always
     environment:
-      REDISCLI_AUTH: ${REDIS_PASSWORD}
+      REDISCLI_AUTH: ${REDIS_PASSWORD:-}
     volumes:
       - redis_data:/data
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: redis-server --requirepass ${REDIS_PASSWORD:-}
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "redis-cli -a ${REDIS_PASSWORD} ping | grep -q PONG",
+          "redis-cli -a ${REDIS_PASSWORD:-} ping | grep -q PONG",
         ]
 
   qdrant:
@@ -409,7 +409,7 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     environment:
-      QDRANT_API_KEY: ${QDRANT_API_KEY}
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-}
     expose:
       - 6333
       - 6334
@@ -423,8 +423,8 @@ services:
     image: minio/minio:latest
     restart: always
     environment:
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
     volumes:
       - minio_data:/data
     command: minio server /data --console-address ":9001"
@@ -457,9 +457,9 @@ services:
       echo 'Initialisation terminée.';
       "
     environment:
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
-      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-difyai}
     networks:
       - default
 
@@ -467,7 +467,7 @@ services:
     image: langgenius/dify-sandbox:0.2.12
     restart: always
     environment:
-      API_KEY: ${SANDBOX_API_KEY}
+      API_KEY: ${SANDBOX_API_KEY:-}
       GIN_MODE: ${SANDBOX_GIN_MODE:-release}
       WORKER_TIMEOUT: ${SANDBOX_WORKER_TIMEOUT:-15}
       ENABLE_NETWORK: ${SANDBOX_ENABLE_NETWORK:-true}
@@ -490,11 +490,11 @@ services:
       <<: *shared-api-worker-env
       DB_DATABASE: ${DB_PLUGIN_DATABASE:-dify_plugin}
       SERVER_PORT: ${PLUGIN_DAEMON_PORT:-5002}
-      SERVER_KEY: ${PLUGIN_DAEMON_KEY}
+      SERVER_KEY: ${PLUGIN_DAEMON_KEY:-}
       MAX_PLUGIN_PACKAGE_SIZE: ${PLUGIN_MAX_PACKAGE_SIZE:-52428800}
       PPROF_ENABLED: ${PLUGIN_PPROF_ENABLED:-false}
       DIFY_INNER_API_URL: ${PLUGIN_DIFY_INNER_API_URL:-http://api:5001}
-      DIFY_INNER_API_KEY: ${PLUGIN_DIFY_INNER_API_KEY}
+      DIFY_INNER_API_KEY: ${PLUGIN_DIFY_INNER_API_KEY:-}
       PLUGIN_REMOTE_INSTALLING_HOST: ${PLUGIN_DEBUGGING_HOST:-0.0.0.0}
       PLUGIN_REMOTE_INSTALLING_PORT: ${PLUGIN_DEBUGGING_PORT:-5003}
       PLUGIN_WORKING_PATH: ${PLUGIN_WORKING_PATH:-/app/storage/cwd}
