@@ -519,6 +519,9 @@ services:
     depends_on:
       db_postgres:
         condition: service_healthy
+    networks:
+      - ssrf_proxy_network
+      - default
 
   ssrf_proxy:
     image: ubuntu/squid:latest
