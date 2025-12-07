@@ -511,8 +511,9 @@ services:
       PLUGIN_MEDIA_CACHE_PATH: ${PLUGIN_MEDIA_CACHE_PATH:-assets}
       SENTRY_ENABLED: ${PLUGIN_SENTRY_ENABLED:-false}
       SENTRY_DSN: ${PLUGIN_SENTRY_DSN:-}
-    ports:
-      - "${EXPOSE_PLUGIN_DEBUGGING_PORT:-5003}:${PLUGIN_DEBUGGING_PORT:-5003}"
+    expose:
+      - 5002
+      - 5003
     volumes:
       - plugin_daemon_storage:/app/storage
     depends_on:
