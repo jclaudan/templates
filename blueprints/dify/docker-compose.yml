@@ -585,7 +585,7 @@ services:
     networks:
       - default
 
-  cloudflared:
+  cloudflared-dify:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
     command:
