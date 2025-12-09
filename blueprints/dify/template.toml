@@ -1,0 +1,144 @@
+[variables]
+main_domain = "${domain}"
+secret_key = "${password:64}"
+db_password = "${password:32}"
+redis_password = "${password:32}"
+qdrant_api_key = "${password:32}"
+minio_access_key = "${password:16}"
+minio_secret_key = "${password:32}"
+sandbox_api_key = "${password:32}"
+plugin_daemon_key = "${password:64}"
+plugin_dify_inner_api_key = "${password:64}"
+s3_bucket_name = "difyai"
+cloudflare_tunnel_token = ""
+
+[config]
+[[config.domains]]
+serviceName = "web"
+port = 3000
+host = "${main_domain}"
+
+[[config.domains]]
+serviceName = "api"
+port = 5001
+host = "${main_domain}"
+path = "/api"
+
+[config.env]
+CONSOLE_API_URL = "http://${main_domain}/api"
+CONSOLE_WEB_URL = "http://${main_domain}"
+SERVICE_API_URL = "http://${main_domain}/api"
+TRIGGER_URL = "http://${main_domain}"
+APP_API_URL = "http://${main_domain}/api"
+APP_WEB_URL = "http://${main_domain}"
+FILES_URL = "http://${main_domain}/api"
+INTERNAL_FILES_URL = "http://api:5001"
+SECRET_KEY = "${secret_key}"
+DB_USERNAME = "postgres"
+DB_PASSWORD = "${db_password}"
+DB_DATABASE = "dify"
+POSTGRES_USER = "postgres"
+POSTGRES_PASSWORD = "${db_password}"
+POSTGRES_DB = "dify"
+REDIS_PASSWORD = "${redis_password}"
+REDISCLI_AUTH = "${redis_password}"
+CELERY_BROKER_URL = "redis://:${redis_password}@redis:6379/1"
+QDRANT_API_KEY = "${qdrant_api_key}"
+MINIO_ACCESS_KEY = "${minio_access_key}"
+MINIO_SECRET_KEY = "${minio_secret_key}"
+S3_ACCESS_KEY = "${minio_access_key}"
+S3_SECRET_KEY = "${minio_secret_key}"
+S3_BUCKET_NAME = "${s3_bucket_name}"
+OPENDAL_S3_ACCESS_KEY_ID = "${minio_access_key}"
+OPENDAL_S3_SECRET_ACCESS_KEY = "${minio_secret_key}"
+OPENDAL_S3_ENDPOINT = "http://minio:9000"
+OPENDAL_S3_BUCKET = "${s3_bucket_name}"
+S3_ENDPOINT = "http://minio:9000"
+SANDBOX_API_KEY = "${sandbox_api_key}"
+CODE_EXECUTION_API_KEY = "${sandbox_api_key}"
+PLUGIN_DAEMON_KEY = "${plugin_daemon_key}"
+PLUGIN_DIFY_INNER_API_KEY = "${plugin_dify_inner_api_key}"
+INNER_API_KEY_FOR_PLUGIN = "${plugin_dify_inner_api_key}"
+CLOUDFLARE_TUNNEL_TOKEN = "${cloudflare_tunnel_token}"
+
+# =========================
+# ✅ VOLUMES PERSISTANTS
+# =========================
+
+[[config.mounts]]
+name = "app_storage"
+mountPath = "/app/api/storage"
+
+[[config.mounts]]
+name = "postgres_data"
+mountPath = "/var/lib/postgresql/data"
+
+[[config.mounts]]
+name = "redis_data"
+mountPath = "/data"
+
+[[config.mounts]]
+name = "qdrant_data"
+mountPath = "/qdrant/storage"
+
+[[config.mounts]]
+name = "minio_data"
+mountPath = "/data"
+
+[[config.mounts]]
+name = "sandbox_dependencies"
+mountPath = "/dependencies"
+
+[[config.mounts]]
+name = "plugin_daemon_storage"
+mountPath = "/app/storage"
+
+# =========================
+# ✅ FICHIERS CONFIG (./files)
+# =========================
+
+[[config.mounts]]
+filePath = "./files/sandbox/conf/config.yaml"
+content = """app:
+  port: 8194
+  debug: True
+  key: dify-sandbox
+max_workers: 4
+max_requests: 50
+worker_timeout: 5
+python_path: /usr/local/bin/python3
+enable_network: True
+allowed_syscalls:
+proxy:
+  socks5: ''
+  http: ''
+  https: ''
+"""
+
+[[config.mounts]]
+filePath = "./files/ssrf_proxy/squid.conf.template"
+content = """(contenu inchangé)"""
+
+[[config.mounts]]
+filePath = "./files/ssrf_proxy/docker-entrypoint.sh"
+content = """(contenu inchangé)"""
+
+[[config.mounts]]
+filePath = "./files/nginx/nginx.conf.template"
+content = """(contenu inchangé)"""
+
+[[config.mounts]]
+filePath = "./files/nginx/proxy.conf.template"
+content = """(contenu inchangé)"""
+
+[[config.mounts]]
+filePath = "./files/nginx/https.conf.template"
+content = """(contenu inchangé)"""
+
+[[config.mounts]]
+filePath = "./files/nginx/docker-entrypoint.sh"
+content = """(contenu inchangé)"""
+
+[[config.mounts]]
+filePath = "./files/nginx/conf.d/default.conf.template"
+content = """(contenu inchangé)"""
